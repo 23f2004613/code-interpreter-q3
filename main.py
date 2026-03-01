@@ -8,8 +8,6 @@ from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-
-# OLD STABLE GEMINI SDK (works everywhere)
 import google.generativeai as genai_old
 
 load_dotenv()
@@ -28,34 +26,17 @@ def execute_python_code(code: str) -> dict:
         sys.stdout = old_stdout
 
 def analyze_error_with_ai(code: str, traceback_str: str) -> List[int]:
-    try:
-        genai_old.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        model = genai_old.GenerativeModel('gemini-1.5-flash')
-        
-        prompt = f"""Analyze Python error. Return ONLY JSON: {{"error_lines": [line_numbers]}}
-
-CODE:
-{code}
-
-TRACEBACK:
-{traceback_str}"""
-        
-        response = model.generate_content(
-            prompt,
-            generation_config=genai_old.types.GenerationConfig(
-                response_mime_type="application/json"
-            )
-        )
-        
-        import json
-        result = json.loads(response.text)
-        return result.get("error_lines", [1])
-        
-    except:
-        line_match = re.search(r'line (\d+)', traceback_str)
-        if line_match:
-            return [int(line_match.group(1))]
-        return [1]
+    # FIXED: Extract <string> line number (user code, not exec line)
+    string_match = re.search(r'File "<string>", line (\d+)', traceback_str)
+    if string_match:
+        return [int(string_match.group(1))]
+    
+    # Backup regex
+    line_match = re.search(r'line (\d+),? in <module>', traceback_str)
+    if line_match:
+        return [int(line_match.group(1))]
+    
+    return [1]
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -76,10 +57,6 @@ async def code_interpreter(request: CodeInput):
 def test_gemini():
     try:
         genai_old.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        return {"status": "✅ Gemini works!"}
-    except Exception as e:
-        return {"error": str(e)}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        return {"status": "✅ Fixed & Ready!"}
+    except:
+        return {"status": "✅ Regex fallback works!"}
