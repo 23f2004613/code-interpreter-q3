@@ -28,8 +28,7 @@ def execute_python_code(code: str) -> dict:
 def analyze_error_with_ai(code: str, traceback_str: str) -> List[int]:
     try:
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        # Extract line number from traceback (SIMPLE & RELIABLE)
-        line_match = re.search(r'line (\d+)', traceback_str)  ← ✅ CORRECT
+        line_match = re.search(r'line (\d+)', traceback_str) 
         if line_match:
             return [int(line_match.group(1))]
         return [1]  # Default
@@ -58,4 +57,5 @@ def test_gemini():
         return {"status": "API key works!"}
     except Exception as e:
         return {"error": str(e)}
+
 
