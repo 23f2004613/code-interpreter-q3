@@ -5,7 +5,7 @@ import os
 import re
 from typing import List
 from pydantic import BaseModel
-from google import genai
+import google.generativeai as genai
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -29,7 +29,7 @@ def analyze_error_with_ai(code: str, traceback_str: str) -> List[int]:
     try:
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         # Extract line number from traceback (SIMPLE & RELIABLE)
-        line_match = re.search(r'line (\d+)', traceback_str)
+        line_match = re.search(r'line (\d+)', traceback_str)  ← ✅ CORRECT
         if line_match:
             return [int(line_match.group(1))]
         return [1]  # Default
@@ -58,3 +58,4 @@ def test_gemini():
         return {"status": "API key works!"}
     except Exception as e:
         return {"error": str(e)}
+
